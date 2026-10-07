@@ -472,14 +472,107 @@
   const counter = document.getElementById("counter");
 
   function loadQuestions(){
+    const defaultQuestions = {
+  "Produzioni animali": [
+    {
+      "id": "pa1",
+      "text": "Per produrre 1 litro di latte, devono passare attraverso la mammella circa 400 litri di sangue.",
+      "answer": "vero"
+    },
+    {
+      "id": "pa2",
+      "text": "Una bovina ad alta produzione non può superare i 30 litri di latte al giorno.",
+      "answer": "fake"
+    },
+    {
+      "id": "pa3",
+      "text": "Durante la fermentazione ruminale vengono prodotti gas, tra cui anidride carbonica e metano.",
+      "answer": "vero"
+    }
+  ],
+  "Tecnologie alimentari": [
+    {
+      "id": "ta1",
+      "text": "Tutte le bevande vegetali vengono prodotte con lo stesso processo tecnologico, indipendentemente dalla materia prima utilizzata.",
+      "answer": "fake"
+    },
+    {
+      "id": "ta2",
+      "text": "Il liquido che si separa dalla cagliata durante la produzione del formaggio si chiama siero di latte.",
+      "answer": "vero"
+    },
+    {
+      "id": "ta3",
+      "text": "Per ottenere 1 kg di formaggio è sempre sufficiente circa 1 litro di latte.",
+      "answer": "fake"
+    }
+  ],
+  "Sostenibilità": [
+    {
+      "id": "so1",
+      "text": "Le bevande vegetali sono tutte ugualmente sostenibili dal punto di vista ambientale.",
+      "answer": "fake"
+    },
+    {
+      "id": "so2",
+      "text": "Se confrontiamo latte vaccino e bevande vegetali a parità di proteine, anziché a parità di volume, il risultato del confronto sull'impatto ambientale può cambiare.",
+      "answer": "vero"
+    },
+    {
+      "id": "so3",
+      "text": "Per capire quanto latte vaccino e bevande vegetali impattano sull’ambiente, dobbiamo considerare anche come vengono prodotti e dove finiscono le confezioni.",
+      "answer": "vero"
+    }
+  ],
+  "Nutrizione": [
+    {
+      "id": "nu1",
+      "text": "Se sostituisco un bicchiere di latte vaccino con uno di bevanda d’avena, ricevo più o meno gli stessi nutrienti.",
+      "answer": "fake"
+    },
+    {
+      "id": "nu2",
+      "text": "Un bicchiere di bevanda vegetale può contenere più zuccheri e più calorie di un bicchiere di latte vaccino.",
+      "answer": "vero"
+    },
+    {
+      "id": "nu3",
+      "text": "Una bevanda di mandorla è fatta per la maggior parte di mandorle.",
+      "answer": "fake"
+    }
+  ],
+  "Economia": [
+    {
+      "id": "ec1",
+      "text": "I consumatori sono disposti a pagare di più per il latte coltivato rispetto a una bevanda vegetale.",
+      "answer": "vero"
+    },
+    {
+      "id": "ec2",
+      "text": "Più della metà dei consumatori utilizza il QR code sulla confezione per informarsi su come è stato prodotto il latte coltivato.",
+      "answer": "fake"
+    },
+    {
+      "id": "ec3",
+      "text": "Meno di 10 consumatori su 100 consultano tramite QR code le informazioni volontarie sulla produzione del latte coltivato.",
+      "answer": "vero"
+    }
+  ]
+};
+
     try{
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if(saved && typeof saved === "object") return saved;
+      if(saved && typeof saved === "object") {
+        // Merge eventuali modifiche locali con le domande predefinite.
+        const merged = JSON.parse(JSON.stringify(defaultQuestions));
+        Object.keys(saved).forEach(category => {
+          if(Array.isArray(saved[category])) merged[category] = saved[category];
+        });
+        return merged;
+      }
     }catch(e){}
 
-    const empty = {};
-    categories.forEach(c => empty[c.name] = []);
-    return empty;
+    return JSON.parse(JSON.stringify(defaultQuestions));
   }
 
   function normalizeStore(){
@@ -787,4 +880,3 @@
 </script>
 </body>
 </html>
-
