@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Ruota delle Fake News</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --accent:#17324d;
+      --shadow:0 14px 40px rgba(0,0,0,.12);
+
+      --c1:#2e8b57;
+      --c2:#f4c542;
+      --c3:#f28c28;
+      --c4:#d9534f;
+      --c5:#6f63c2;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:linear-gradient(135deg,#edf4fb,#f8fafc);
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:18px 24px;
+      background:var(--accent);
+      color:#fff;
+      box-shadow:0 4px 18px rgba(0,0,0,.15);
+      position:sticky;
+      top:0;
+      z-index:20;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:clamp(22px,3vw,34px);
+    }
+
+    .brand p{
+      margin:4px 0 0;
+      opacity:.85;
+      font-size:14px;
+    }
+
+    button{
+      font:inherit;
+      cursor:pointer;
+    }
+
+    .admin-toggle{
+      border:0;
+      background:#fff;
+      color:var(--accent);
+      font-weight:700;
+      padding:11px 16px;
+      border-radius:12px;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 360px;
+      gap:24px;
+      padding:26px;
+      max-width:1400px;
+      margin:0 auto;
+    }
+
+    .layout.admin-closed{
+      grid-template-columns:1fr;
+    }
+
+    .game-card,
+    .admin-panel{
+      background:var(--card);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+    }
+
+    .game-card{
+      padding:28px;
+      display:grid;
+      grid-template-columns:minmax(320px,560px) minmax(280px,1fr);
+      gap:32px;
+      align-items:center;
+    }
+
+    .wheel-zone{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:20px;
+    }
+
+    .wheel-wrap{
+      position:relative;
+      width:min(78vw,520px);
+      aspect-ratio:1;
+      display:grid;
+      place-items:center;
+    }
+
+    .pointer{
+      position:absolute;
+      top:-10px;
+      left:50%;
+      transform:translateX(-50%);
+      width:0;
+      height:0;
+      border-left:22px solid transparent;
+      border-right:22px solid transparent;
+      border-top:44px solid var(--accent);
+      z-index:5;
+      filter:drop-shadow(0 4px 4px rgba(0,0,0,.2));
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 10px 30px rgba(0,0,0,.18);
+    }
+
+    .spin-btn{
+      border:0;
+      background:var(--accent);
+      color:#fff;
+      font-size:22px;
+      font-weight:800;
+      padding:16px 34px;
+      border-radius:16px;
+      box-shadow:0 8px 20px rgba(23,50,77,.25);
+    }
+
+    .spin-btn:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+    }
+
+    .question-zone{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      min-height:440px;
+      justify-content:center;
+    }
+
+    .category-badge{
+      align-self:flex-start;
+      padding:8px 12px;
+      border-radius:999px;
+      color:#fff;
+      font-weight:700;
+      font-size:14px;
+      display:none;
+    }
+
+    .question-box{
+      border:2px solid #e5e7eb;
+      background:#fafafa;
+      border-radius:20px;
+      padding:24px;
+      min-height:180px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-size:clamp(22px,2.5vw,34px);
+      font-weight:800;
+      line-height:1.25;
+    }
+
+    .answers{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    .answer-btn{
+      border:0;
+      color:#fff;
+      font-size:20px;
+      font-weight:800;
+      padding:18px;
+      border-radius:16px;
+      opacity:.45;
+      pointer-events:none;
+    }
+
+    .answer-btn.active{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    #btnVero{ background:#1f9d55; }
+    #btnFake{ background:#d64545; }
+
+    .feedback{
+      min-height:52px;
+      border-radius:14px;
+      padding:14px 16px;
+      font-size:18px;
+      font-weight:700;
+      text-align:center;
+      display:none;
+    }
+
+    .feedback.ok{
+      display:block;
+      background:#dcfce7;
+      color:#166534;
+    }
+
+    .feedback.ko{
+      display:block;
+      background:#fee2e2;
+      color:#991b1b;
+    }
+
+    .empty-note{
+      display:none;
+      background:#fff7ed;
+      color:#9a3412;
+      padding:14px 16px;
+      border-radius:14px;
+      font-weight:700;
+    }
+
+    .admin-panel{
+      padding:20px;
+      align-self:start;
+      position:sticky;
+      top:100px;
+    }
+
+    .admin-panel.hidden{
+      display:none;
+    }
+
+    .admin-panel h2{
+      margin:0 0 8px;
+    }
+
+    .admin-panel p{
+      margin:0 0 18px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    label{
+      display:block;
+      font-weight:700;
+      margin:14px 0 6px;
+    }
+
+    select, textarea{
+      width:100%;
+      border:1px solid #d1d5db;
+      border-radius:12px;
+      padding:11px 12px;
+      background:#fff;
+      font:inherit;
+    }
+
+    textarea{
+      min-height:110px;
+      resize:vertical;
+    }
+
+    .admin-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:16px;
+    }
+
+    .admin-actions button,
+    .delete-all{
+      border:0;
+      border-radius:12px;
+      padding:12px;
+      font-weight:800;
+    }
+
+    .save-btn{background:var(--accent);color:#fff;}
+    .clear-btn{background:#e5e7eb;color:#111827;}
+    .delete-all{background:#fee2e2;color:#991b1b;width:100%;margin-top:10px;}
+
+    .question-list{
+      margin-top:18px;
+      max-height:300px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .q-item{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:10px;
+      background:#fafafa;
+    }
+
+    .q-item strong{
+      display:block;
+      margin-bottom:5px;
+      font-size:13px;
+    }
+
+    .q-item small{
+      color:var(--muted);
+    }
+
+    .q-item button{
+      margin-top:8px;
+      border:0;
+      background:#f3f4f6;
+      color:#991b1b;
+      border-radius:8px;
+      padding:6px 9px;
+      font-weight:700;
+    }
+
+    .counter{
+      margin-top:10px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    @media (max-width:1000px){
+      .layout{grid-template-columns:1fr}
+      .game-card{grid-template-columns:1fr}
+      .admin-panel{position:static}
+    }
+
+    @media (max-width:640px){
+      .topbar{align-items:flex-start;flex-direction:column}
+      .layout{padding:14px}
+      .game-card{padding:18px}
+      .answers{grid-template-columns:1fr}
+      .wheel-wrap{width:min(88vw,460px)}
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <h1>🎡 La Ruota delle Fake News</h1>
+      <p>Gira la ruota, ascolta l'affermazione e scegli: vero o fake news?</p>
+    </div>
+    <button class="admin-toggle" id="adminToggle">⚙️ Gestione domande</button>
+  </header>
+
+  <main class="layout admin-closed" id="layout">
+    <section class="game-card">
+      <div class="wheel-zone">
+        <div class="wheel-wrap">
+          <div class="pointer"></div>
+          <canvas id="wheel" width="700" height="700"></canvas>
+        </div>
+        <button class="spin-btn" id="spinBtn">GIRA LA RUOTA</button>
+      </div>
+
+      <div class="question-zone">
+        <div class="category-badge" id="categoryBadge"></div>
+
+        <div class="question-box" id="questionBox">
+          Premi “GIRA LA RUOTA” per iniziare.
+        </div>
+
+        <div class="answers">
+          <button class="answer-btn" id="btnVero">VERO</button>
+          <button class="answer-btn" id="btnFake">FAKE NEWS</button>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+        <div class="empty-note" id="emptyNote"></div>
+      </div>
+    </section>
+
+    <aside class="admin-panel hidden" id="adminPanel">
+      <h2>Gestione domande</h2>
+      <p>
+        Inserisci qui le affermazioni. I dati vengono salvati sul dispositivo
+        usando il browser.
+      </p>
+
+      <label for="categorySelect">Categoria</label>
+      <select id="categorySelect"></select>
+
+      <label for="questionInput">Affermazione</label>
+      <textarea id="questionInput" placeholder="Esempio: Il latte UHT deve essere conservato in frigorifero anche prima dell'apertura."></textarea>
+
+      <label for="answerSelect">Risposta corretta</label>
+      <select id="answerSelect">
+        <option value="vero">Vero</option>
+        <option value="fake">Fake news</option>
+      </select>
+
+      <div class="admin-actions">
+        <button class="save-btn" id="saveQuestion">Salva domanda</button>
+        <button class="clear-btn" id="clearForm">Pulisci</button>
+      </div>
+
+      <button class="delete-all" id="deleteAll">Elimina tutte le domande</button>
+
+      <div class="counter" id="counter"></div>
+      <div class="question-list" id="questionList"></div>
+    </aside>
+  </main>
+
+<script>
+  const STORAGE_KEY = "ruotaFakeNews_v1";
+
+  const categories = [
+    { name: "Produzioni animali", color: "#2e8b57" },
+    { name: "Tecnologie alimentari", color: "#f4c542" },
+    { name: "Microbiologia", color: "#f28c28" },
+    { name: "Nutrizione", color: "#d9534f" },
+    { name: "Economia", color: "#6f63c2" }
+  ];
+
+  // 10 spicchi: 2 per ogni categoria, alternati nello stesso ordine.
+  const slices = [
+    ...categories,
+    ...categories
+  ];
+
+  let questions = loadQuestions();
+  let usedQuestionIds = {};
+  let currentQuestion = null;
+  let currentRotation = 0;
+  let spinning = false;
+
+  const wheel = document.getElementById("wheel");
+  const ctx = wheel.getContext("2d");
+  const spinBtn = document.getElementById("spinBtn");
+  const questionBox = document.getElementById("questionBox");
+  const categoryBadge = document.getElementById("categoryBadge");
+  const btnVero = document.getElementById("btnVero");
+  const btnFake = document.getElementById("btnFake");
+  const feedback = document.getElementById("feedback");
+  const emptyNote = document.getElementById("emptyNote");
+
+  const adminToggle = document.getElementById("adminToggle");
+  const adminPanel = document.getElementById("adminPanel");
+  const layout = document.getElementById("layout");
+  const categorySelect = document.getElementById("categorySelect");
+  const questionInput = document.getElementById("questionInput");
+  const answerSelect = document.getElementById("answerSelect");
+  const saveQuestion = document.getElementById("saveQuestion");
+  const clearForm = document.getElementById("clearForm");
+  const deleteAll = document.getElementById("deleteAll");
+  const questionList = document.getElementById("questionList");
+  const counter = document.getElementById("counter");
+
+  function loadQuestions(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if(saved && typeof saved === "object") return saved;
+    }catch(e){}
+
+    const empty = {};
+    categories.forEach(c => empty[c.name] = []);
+    return empty;
+  }
+
+  function normalizeStore(){
+    categories.forEach(c => {
+      if(!Array.isArray(questions[c.name])) questions[c.name] = [];
+    });
+  }
+
+  function saveStore(){
+    normalizeStore();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
+    renderQuestionList();
+  }
+
+  function drawWheel(rotation = 0){
+    const size = wheel.width;
+    const center = size / 2;
+    const radius = size / 2 - 10;
+    const arc = (Math.PI * 2) / slices.length;
+
+    ctx.clearRect(0,0,size,size);
+    ctx.save();
+    ctx.translate(center,center);
+    ctx.rotate(rotation);
+
+    slices.forEach((slice, i) => {
+      const start = -Math.PI/2 + i * arc;
+      const end = start + arc;
+
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.arc(0,0,radius,start,end);
+      ctx.closePath();
+      ctx.fillStyle = slice.color;
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+
+      ctx.save();
+      ctx.rotate(start + arc/2);
+      ctx.translate(radius * 0.63, 0);
+      ctx.rotate(Math.PI/2);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 23px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      const words = slice.name.split(" ");
+      if(words.length <= 2){
+        words.forEach((w, idx) => {
+          ctx.fillText(w, 0, (idx - (words.length-1)/2)*26);
+        });
+      } else {
+        ctx.fillText(slice.name,0,0);
+      }
+      ctx.restore();
+    });
+
+    ctx.beginPath();
+    ctx.arc(0,0,64,0,Math.PI*2);
+    ctx.fillStyle = "#17324d";
+    ctx.fill();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 19px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("FAKE",0,-10);
+    ctx.fillText("NEWS",0,14);
+
+    ctx.restore();
+  }
+
+  function getSliceIndexFromRotation(rotation){
+    const arc = (Math.PI * 2) / slices.length;
+    let normalized = rotation % (Math.PI * 2);
+    if(normalized < 0) normalized += Math.PI * 2;
+
+    // Il puntatore è in alto. Troviamo quale spicchio è arrivato lì.
+    let index = Math.floor(((Math.PI * 2 - normalized) % (Math.PI * 2)) / arc);
+    return index % slices.length;
+  }
+
+  function spinWheel(){
+    if(spinning) return;
+
+    resetQuestionUI();
+    spinning = true;
+    spinBtn.disabled = true;
+
+    const arc = (Math.PI * 2) / slices.length;
+    const targetIndex = Math.floor(Math.random() * slices.length);
+
+    // Porta il centro dello spicchio scelto sotto il puntatore.
+    const desired = -(targetIndex * arc + arc/2);
+    const extraTurns = (6 + Math.floor(Math.random()*4)) * Math.PI * 2;
+
+    const startRotation = currentRotation;
+    let targetRotation = desired;
+
+    while(targetRotation <= startRotation + extraTurns){
+      targetRotation += Math.PI * 2;
+    }
+
+    const duration = 4200;
+    const startTime = performance.now();
+
+    function animate(now){
+      const t = Math.min((now - startTime)/duration,1);
+      const ease = 1 - Math.pow(1-t,4);
+      const rotation = startRotation + (targetRotation - startRotation)*ease;
+
+      drawWheel(rotation);
+
+      if(t < 1){
+        requestAnimationFrame(animate);
+      }else{
+        currentRotation = targetRotation % (Math.PI*2);
+        spinning = false;
+        spinBtn.disabled = false;
+
+        const selected = slices[targetIndex];
+        showQuestionForCategory(selected.name, selected.color);
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  function showQuestionForCategory(category, color){
+    const pool = questions[category] || [];
+
+    categoryBadge.textContent = category;
+    categoryBadge.style.background = color;
+    categoryBadge.style.display = "inline-block";
+
+    if(pool.length === 0){
+      currentQuestion = null;
+      questionBox.textContent = "Nessuna domanda inserita per questa categoria.";
+      emptyNote.textContent = "Apri “Gestione domande” e aggiungi almeno un'affermazione per questa categoria.";
+      emptyNote.style.display = "block";
+      setAnswerButtons(false);
+      return;
+    }
+
+    if(!usedQuestionIds[category]) usedQuestionIds[category] = [];
+
+    let available = pool.filter(q => !usedQuestionIds[category].includes(q.id));
+
+    // Quando sono uscite tutte, il ciclo riparte.
+    if(available.length === 0){
+      usedQuestionIds[category] = [];
+      available = [...pool];
+    }
+
+    currentQuestion = available[Math.floor(Math.random() * available.length)];
+    usedQuestionIds[category].push(currentQuestion.id);
+
+    questionBox.textContent = currentQuestion.text;
+    setAnswerButtons(true);
+  }
+
+  function checkAnswer(answer){
+    if(!currentQuestion) return;
+
+    const correct = currentQuestion.answer === answer;
+    setAnswerButtons(false);
+
+    feedback.className = "feedback " + (correct ? "ok" : "ko");
+    feedback.textContent = correct
+      ? "✅ Risposta corretta!"
+      : "❌ Risposta sbagliata. La risposta corretta era: " +
+        (currentQuestion.answer === "vero" ? "VERO" : "FAKE NEWS");
+  }
+
+  function setAnswerButtons(active){
+    [btnVero, btnFake].forEach(btn => {
+      btn.classList.toggle("active", active);
+    });
+  }
+
+  function resetQuestionUI(){
+    currentQuestion = null;
+    questionBox.textContent = "La ruota sta girando...";
+    categoryBadge.style.display = "none";
+    feedback.className = "feedback";
+    feedback.textContent = "";
+    emptyNote.style.display = "none";
+    setAnswerButtons(false);
+  }
+
+  function fillCategorySelect(){
+    categorySelect.innerHTML = "";
+    categories.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.name;
+      opt.textContent = c.name;
+      categorySelect.appendChild(opt);
+    });
+  }
+
+  function addQuestion(){
+    const category = categorySelect.value;
+    const text = questionInput.value.trim();
+    const answer = answerSelect.value;
+
+    if(!text){
+      alert("Scrivi prima l'affermazione.");
+      return;
+    }
+
+    if(!questions[category]) questions[category] = [];
+
+    questions[category].push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,8),
+      text,
+      answer
+    });
+
+    questionInput.value = "";
+    answerSelect.value = "vero";
+    saveStore();
+  }
+
+  function deleteQuestion(category, id){
+    questions[category] = (questions[category] || []).filter(q => q.id !== id);
+    saveStore();
+  }
+
+  function deleteAllQuestions(){
+    if(!confirm("Vuoi davvero eliminare tutte le domande inserite?")) return;
+
+    questions = {};
+    categories.forEach(c => questions[c.name] = []);
+    usedQuestionIds = {};
+    saveStore();
+  }
+
+  function renderQuestionList(){
+    normalizeStore();
+    questionList.innerHTML = "";
+
+    let total = 0;
+
+    categories.forEach(cat => {
+      const arr = questions[cat.name] || [];
+      total += arr.length;
+
+      arr.forEach(q => {
+        const item = document.createElement("div");
+        item.className = "q-item";
+
+        const title = document.createElement("strong");
+        title.textContent = cat.name;
+
+        const txt = document.createElement("div");
+        txt.textContent = q.text;
+
+        const ans = document.createElement("small");
+        ans.textContent = "Risposta: " + (q.answer === "vero" ? "VERO" : "FAKE NEWS");
+
+        const del = document.createElement("button");
+        del.textContent = "Elimina";
+        del.addEventListener("click", () => deleteQuestion(cat.name, q.id));
+
+        item.append(title, txt, ans, del);
+        questionList.appendChild(item);
+      });
+    });
+
+    counter.textContent = total === 1 ? "1 domanda inserita" : total + " domande inserite";
+  }
+
+  adminToggle.addEventListener("click", () => {
+    const nowHidden = !adminPanel.classList.contains("hidden");
+
+    adminPanel.classList.toggle("hidden");
+    layout.classList.toggle("admin-closed");
+
+    adminToggle.textContent = nowHidden
+      ? "⚙️ Gestione domande"
+      : "✕ Chiudi gestione";
+  });
+
+  spinBtn.addEventListener("click", spinWheel);
+  btnVero.addEventListener("click", () => checkAnswer("vero"));
+  btnFake.addEventListener("click", () => checkAnswer("fake"));
+  saveQuestion.addEventListener("click", addQuestion);
+  clearForm.addEventListener("click", () => {
+    questionInput.value = "";
+    answerSelect.value = "vero";
+  });
+  deleteAll.addEventListener("click", deleteAllQuestions);
+
+  normalizeStore();
+  fillCategorySelect();
+  renderQuestionList();
+  drawWheel();
+  setAnswerButtons(false);
+</script>
+</body>
+</html>
